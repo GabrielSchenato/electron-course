@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Tray, Menu, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, globalShortcut, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const url = require('url');
 const path = require('path');
 
@@ -79,4 +80,46 @@ function createWindow() {
     });
 }
 
-app.on('ready', createWindow);
+function sendStatusToWindow(text) {
+    const dialogOpts = {
+        type: 'info',
+        buttons: ['Ok'],
+        title: 'Atualização do aplicativo',
+        message: 'Detalhes:',
+        detail: text
+    }
+    dialog.showMessageBox(dialogOpts);
+}
+
+autoUpdater.on('checking-for-update', () => {
+    sendStatusToWindow('Checking for update...');
+});
+
+autoUpdater.on('update-available', () => {
+    sendStatusToWindow('Update available.');
+});
+
+autoUpdater.on('update-not-available', () => {
+    sendStatusToWindow('Update not available.');
+});
+
+autoUpdater.on('error', (err) => {
+    sendStatusToWindow('Error in auto-update. ' + err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+    let log_message = "Download speed: " + progressObj.bytesPerSecond;
+    log_message = log_message + " - Downloaded " + progressObj.percent + "%";
+    log_message = log_message + " (" + progressObj.transferred + "/" + progressObj.total;
+    sendStatusToWindow(log_message);
+});
+
+autoUpdater.on('update-downloaded', () => {
+    sendStatusToWindow('Update downloaded.');
+});
+
+
+app.on('ready', function () {
+    autoUpdater.checkForUpdatesAndNotify();
+    createWindow();
+});
